@@ -2,6 +2,20 @@ PisoNet Orange Pi One bootstrap agent
 
 Do not install over the existing LPB service yet.
 
+Armbian / Debian systemd install:
+
+1. Copy pisonet-agent to /usr/local/bin/pisonet-agent and chmod 0755.
+2. Run: /usr/local/bin/pisonet-agent -self-test
+3. Create /etc/pisonet-agent and copy config.json.example to config.json.
+4. Replace the server URL, provisioned device ID, and unique device secret; chmod 0600 config.json.
+5. Create /var/lib/pisonet-agent/spool.
+6. Copy pisonet-agent.service to /etc/systemd/system/pisonet-agent.service.
+7. Run: systemctl daemon-reload
+8. Run: systemctl enable --now pisonet-agent
+9. Inspect: journalctl -u pisonet-agent -f
+
+OpenWrt/procd install:
+
 1. Copy pisonet-agent to /usr/bin/pisonet-agent and chmod 0755.
 2. Run: /usr/bin/pisonet-agent -self-test
 3. Create /etc/pisonet-agent and copy config.json.example to config.json.
