@@ -1,0 +1,8 @@
+{
+  "server_url": "https://YOUR-COOLIFY-DOMAIN.example.com",
+  "device_id": "REPLACE-WITH-PROVISIONED-DEVICE-ID",
+  "device_secret": "REPLACE-WITH-AT-LEAST-32-RANDOM-CHARACTERS",
+  "heartbeat_seconds": 30,
+  "spool_dir": "/var/lib/pisonet-agent/spool",
+  "allow_insecure_http": false
+}

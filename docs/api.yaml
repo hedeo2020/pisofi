@@ -1,0 +1,64 @@
+openapi: 3.1.0
+info:
+  title: PisoNet simulation API
+  version: 0.2.0
+  description: Simulation contract only. Production authentication and provider endpoints are intentionally gated.
+servers:
+  - url: http://127.0.0.1:3000
+paths:
+  /healthz:
+    get:
+      responses:
+        "200":
+          description: Healthy simulation API
+  /api/v1/sim/devices:
+    post:
+      summary: Enroll a simulated station
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, pulseValue]
+              properties:
+                tenantId: { type: string, format: uuid }
+                name: { type: string, minLength: 1 }
+                pulseValue: { type: integer, minimum: 1 }
+      responses:
+        "201": { description: Station enrolled }
+        "422": { description: Validation failure }
+  /api/v1/sim/payment-intents:
+    post:
+      summary: Create a simulated digital payment
+      parameters:
+        - in: header
+          name: X-Tenant-ID
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId, method, amount, durationSeconds]
+              properties:
+                deviceId: { type: string, format: uuid }
+                method: { type: string, enum: [gcash, maya, qrph] }
+                amount: { type: integer, minimum: 1 }
+                durationSeconds: { type: integer, minimum: 1 }
+      responses:
+        "201": { description: Pending payment intent }
+        "422": { description: Validation failure }
+  /api/v1/payment-webhooks/mock:
+    post:
+      summary: Receive a signed mock-provider callback
+      parameters:
+        - in: header
+          name: X-Webhook-Signature
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Idempotently processed }
+        "422": { description: Invalid signature or event }

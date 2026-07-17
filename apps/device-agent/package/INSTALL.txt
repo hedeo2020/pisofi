@@ -1,0 +1,14 @@
+PisoNet Orange Pi One bootstrap agent
+
+Do not install over the existing LPB service yet.
+
+1. Copy pisonet-agent to /usr/bin/pisonet-agent and chmod 0755.
+2. Run: /usr/bin/pisonet-agent -self-test
+3. Create /etc/pisonet-agent and copy config.json.example to config.json.
+4. Replace the server URL, provisioned device ID, and unique device secret; chmod 0600 config.json.
+5. Copy pisonet-agent.init to /etc/init.d/pisonet-agent and chmod 0755.
+6. Run: /etc/init.d/pisonet-agent enable
+7. Run: /etc/init.d/pisonet-agent start
+8. Inspect: logread -e pisonet-agent
+
+The current build sends signed outbound heartbeats only. GPIO and nftables changes are intentionally disabled until board wiring and interface names are inspected over SSH.
