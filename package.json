@@ -1,0 +1,13 @@
+{
+  "name": "pisonet-sim",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "simulate": "node apps/simulator/src/main.js",
+    "start:api": "node apps/api/src/main.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
