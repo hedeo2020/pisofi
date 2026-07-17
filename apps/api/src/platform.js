@@ -9,6 +9,7 @@ function positiveInteger(value, name) {
 export function createInMemoryPlatform({ now = () => new Date(), paymentGateway } = {}) {
   const tenants = new Map();
   const devices = new Map();
+  const deviceEvents = new Map();
   const balances = new Map();
   const eventIds = new Set();
   const vouchers = new Map();
@@ -49,14 +50,34 @@ export function createInMemoryPlatform({ now = () => new Date(), paymentGateway 
       return tenant;
     },
 
-    enrollDevice({ tenantId = defaultTenantId, name, pulseValue }) {
+    enrollDevice({ tenantId = defaultTenantId, name, pulseValue, deviceSecret }) {
       requireTenant(tenantId);
       positiveInteger(pulseValue, "pulseValue");
       if (typeof name !== "string" || name.trim().length < 1) throw new Error("name is required");
-      const device = { id: randomUUID(), tenantId, name: name.trim(), pulseValue };
+      if (deviceSecret !== undefined && (typeof deviceSecret !== "string" || deviceSecret.length < 32)) {
+        throw new Error("deviceSecret must be at least 32 characters");
+      }
+      const device = { id: randomUUID(), tenantId, name: name.trim(), pulseValue, deviceSecret };
       devices.set(device.id, device);
       balances.set(device.id, 0);
-      return device;
+      const { deviceSecret: _, ...safeDevice } = device;
+      return safeDevice;
+    },
+
+    getDeviceSecret(deviceId) {
+      const device = requireDevice(deviceId);
+      if (!device.deviceSecret) throw new Error("device secret is not configured");
+      return device.deviceSecret;
+    },
+
+    recordDeviceEvent({ deviceId, event }) {
+      requireDevice(deviceId);
+      if (!event || typeof event.event !== "string" || event.event.length < 1) throw new Error("event is required");
+      const stored = deviceEvents.get(deviceId) ?? [];
+      const recorded = { ...event, receivedAt: now() };
+      stored.push(recorded);
+      deviceEvents.set(deviceId, stored);
+      return { accepted: true, deviceId, event: event.event, receivedAt: recorded.receivedAt };
     },
 
     recordCoinPulse({ deviceId, eventId, pulses }) {

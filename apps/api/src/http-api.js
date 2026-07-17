@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { createInMemoryPlatform } from "./platform.js";
+import { verifyDeviceRequest } from "./device-auth.js";
 
 const MAX_BODY_BYTES = 32 * 1024;
 
@@ -31,6 +32,12 @@ function routeParams(path, expression) {
   return expression.exec(path)?.groups ?? null;
 }
 
+function requireHeader(request, name) {
+  const value = request.headers[name.toLowerCase()];
+  if (typeof value !== "string" || value.length < 1) throw new Error(`${name} header is required`);
+  return value;
+}
+
 export function createApiServer({ platform = createInMemoryPlatform() } = {}) {
   return createServer(async (request, response) => {
     const url = new URL(request.url, "http://localhost");
@@ -52,6 +59,28 @@ export function createApiServer({ platform = createInMemoryPlatform() } = {}) {
       if (request.method === "POST" && url.pathname === "/api/v1/sim/devices") {
         const device = platform.enrollDevice(await readJson(request));
         return send(response, 201, { data: device }, { location: `/api/v1/sim/devices/${device.id}` });
+      }
+
+      if (request.method === "POST" && url.pathname === "/api/v1/device-events") {
+        const body = await readBody(request);
+        const deviceId = requireHeader(request, "X-Device-ID");
+        const timestamp = Number.parseInt(requireHeader(request, "X-Device-Timestamp"), 10);
+        const nonce = requireHeader(request, "X-Device-Nonce");
+        const signature = requireHeader(request, "X-Device-Signature");
+        const secret = platform.getDeviceSecret(deviceId);
+        const authorized = verifyDeviceRequest({
+          method: request.method,
+          path: url.pathname,
+          body,
+          timestamp,
+          nonce,
+          signature,
+          secret,
+          nowSeconds: Math.floor(Date.now() / 1000),
+        });
+        if (!authorized) return send(response, 401, { error: { code: "unauthorized", message: "Invalid device signature" } });
+        const recorded = platform.recordDeviceEvent({ deviceId, event: JSON.parse(body || "{}") });
+        return send(response, 202, { data: recorded });
       }
 
       const pulse = routeParams(url.pathname, /^\/api\/v1\/sim\/devices\/(?<deviceId>[^/]+)\/coin-pulses$/);

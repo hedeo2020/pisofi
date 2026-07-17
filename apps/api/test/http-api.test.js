@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createApiServer } from "../src/http-api.js";
+import { signDeviceRequest } from "../src/device-auth.js";
 
 async function withServer(run) {
   const server = createApiServer();
@@ -71,6 +72,68 @@ test("HTTP API completes the simulated purchase flow", async () => {
     });
     assert.equal(redeemed.response.status, 201);
     assert.equal(redeemed.body.data.deviceId, deviceId);
+  });
+});
+
+test("device event endpoint accepts signed heartbeat", async () => {
+  await withServer(async (baseUrl) => {
+    const secret = "orange-pi-device-secret-at-least-32-characters";
+    const enrolled = await json(baseUrl, "/api/v1/sim/devices", {
+      method: "POST",
+      body: JSON.stringify({ name: "orange-pi-one-001", pulseValue: 5, deviceSecret: secret }),
+    });
+    assert.equal(enrolled.response.status, 201);
+    const deviceId = enrolled.body.data.id;
+    assert.equal(enrolled.body.data.deviceSecret, undefined);
+
+    const path = "/api/v1/device-events";
+    const body = JSON.stringify({ event: "heartbeat", agent: { os: "linux", arch: "arm" } });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = "nonce-for-heartbeat-test";
+    const signature = signDeviceRequest({ method: "POST", path, body, timestamp, nonce, secret });
+
+    const eventResponse = await fetch(baseUrl + path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-device-id": deviceId,
+        "x-device-timestamp": String(timestamp),
+        "x-device-nonce": nonce,
+        "x-device-signature": signature,
+      },
+      body,
+    });
+    assert.equal(eventResponse.status, 202);
+    const event = (await eventResponse.json()).data;
+    assert.equal(event.accepted, true);
+    assert.equal(event.deviceId, deviceId);
+    assert.equal(event.event, "heartbeat");
+  });
+});
+
+test("device event endpoint rejects forged heartbeat", async () => {
+  await withServer(async (baseUrl) => {
+    const enrolled = await json(baseUrl, "/api/v1/sim/devices", {
+      method: "POST",
+      body: JSON.stringify({
+        name: "orange-pi-one-001",
+        pulseValue: 5,
+        deviceSecret: "orange-pi-device-secret-at-least-32-characters",
+      }),
+    });
+    const response = await fetch(baseUrl + "/api/v1/device-events", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-device-id": enrolled.body.data.id,
+        "x-device-timestamp": String(Math.floor(Date.now() / 1000)),
+        "x-device-nonce": "nonce-for-forged-test",
+        "x-device-signature": "00",
+      },
+      body: JSON.stringify({ event: "heartbeat" }),
+    });
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).error.code, "unauthorized");
   });
 });
 
