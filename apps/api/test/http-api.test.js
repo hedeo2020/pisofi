@@ -27,6 +27,20 @@ test("health endpoint reports simulation mode", async () => {
     const { response, body } = await json(baseUrl, "/healthz");
     assert.equal(response.status, 200);
     assert.deepEqual(body, { status: "ok", mode: "simulation" });
+
+    const alias = await json(baseUrl, "/health");
+    assert.equal(alias.response.status, 200);
+    assert.deepEqual(alias.body, { status: "ok", mode: "simulation" });
+  });
+});
+
+test("root endpoint identifies the API", async () => {
+  await withServer(async (baseUrl) => {
+    const { response, body } = await json(baseUrl, "/");
+    assert.equal(response.status, 200);
+    assert.equal(body.name, "pisofi-api");
+    assert.equal(body.status, "ok");
+    assert.equal(body.health, "/healthz");
   });
 });
 

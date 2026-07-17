@@ -35,7 +35,17 @@ export function createApiServer({ platform = createInMemoryPlatform() } = {}) {
   return createServer(async (request, response) => {
     const url = new URL(request.url, "http://localhost");
     try {
-      if (request.method === "GET" && url.pathname === "/healthz") {
+      if (request.method === "GET" && url.pathname === "/") {
+        return send(response, 200, {
+          name: "pisofi-api",
+          status: "ok",
+          mode: "simulation",
+          health: "/healthz",
+          version: "v1",
+        });
+      }
+
+      if (request.method === "GET" && (url.pathname === "/healthz" || url.pathname === "/health")) {
         return send(response, 200, { status: "ok", mode: "simulation" });
       }
 
