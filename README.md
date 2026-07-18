@@ -15,13 +15,23 @@ The simulation creates a tenant and virtual Orange Pi, records idempotent coin p
 
 1. Copy `.env.example` to `.env` and replace the database password.
 2. Run `docker compose up --build`.
-3. Check `http://127.0.0.1:3000/healthz`.
+3. Check `http://127.0.0.1:3000/healthz` for the API.
+4. Check `http://127.0.0.1:3001/healthz` for the customer portal.
 
 PostgreSQL and MQTT are present to validate infrastructure wiring. The schema includes tenant users/RBAC, devices, event idempotency, an append-only credit ledger, payment intents/events, vouchers, and sessions. The API deliberately refuses `APP_MODE=production` until its durable PostgreSQL repository, tenant authentication, nonce replay store, real payment provider, and MQTT authorization are implemented and tested.
 
 ## Coolify simulation
 
-Deploy this repository as a Docker Compose resource. Set `POSTGRES_PASSWORD` as a Coolify secret. Route a temporary HTTPS hostname only to the `api` service on port 3000. Do not publish PostgreSQL or MQTT publicly. Keep `APP_MODE=simulation` and use disposable data.
+Deploy this repository as a Docker Compose resource. Set `POSTGRES_PASSWORD` and `SIMULATION_WEBHOOK_SECRET` as Coolify secrets.
+
+Route:
+
+- `api.3dbpoint.com` to the `api` service on port 3000.
+- `cpanel.3dbpoint.com` to the `portal` service on port 3000.
+
+Do not publish PostgreSQL or MQTT publicly. Keep `APP_MODE=simulation` and use disposable data.
+
+The Orange Pi agent sends signed heartbeats and optional signed `coin_pulse` events to `/api/v1/device-events`. Coin GPIO polling stays disabled until `coin_pulse_value_path` is set on the device.
 
 ## Production gates
 
