@@ -58,3 +58,28 @@ test("HTTP payment intent is completed only by a signed webhook", async () => {
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("public payment intent can be created from device ID only", async () => {
+  const gateway = createMockPaymentGateway({ webhookSecret: "http-test-webhook-secret-at-least-32" });
+  const platform = createInMemoryPlatform({ paymentGateway: gateway });
+  const tenant = platform.createTenant({ name: "Owner A" });
+  const device = platform.enrollDevice({ tenantId: tenant.id, name: "Station A", pulseValue: 5 });
+  const server = createApiServer({ platform });
+  const port = await listenOnFetchablePort(server);
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  try {
+    const response = await fetch(baseUrl + "/api/v1/public/payment-intents", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deviceId: device.id, method: "qrph", amount: 20, durationSeconds: 1800 }),
+    });
+    assert.equal(response.status, 201);
+    const created = (await response.json()).data;
+    assert.equal(created.deviceId, device.id);
+    assert.equal(created.status, "pending");
+    assert.equal(typeof created.qrCodeBody, "string");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
