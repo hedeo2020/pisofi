@@ -155,6 +155,11 @@ export function createInMemoryPlatform({ now = () => new Date(), paymentGateway 
       return { ...payment };
     },
 
+    async createPublicPaymentIntent({ deviceId, method, amount, durationSeconds }) {
+      const device = requireDevice(deviceId);
+      return this.createPaymentIntent({ tenantId: device.tenantId, deviceId, method, amount, durationSeconds });
+    },
+
     async processPaymentWebhook(webhook) {
       if (!paymentGateway) throw new Error("payment gateway is not configured");
       const event = paymentGateway.verifyWebhook(webhook);

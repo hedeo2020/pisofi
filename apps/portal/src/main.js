@@ -62,9 +62,9 @@ function html({ apiBaseUrl }) {
       result.textContent = "Creating payment intent...";
       const data = Object.fromEntries(new FormData(form).entries());
       try {
-        const response = await fetch(apiBaseUrl + "/api/v1/sim/payment-intents", {
+        const response = await fetch(apiBaseUrl + "/api/v1/public/payment-intents", {
           method: "POST",
-          headers: { "content-type": "application/json", "x-tenant-id": "simulation" },
+          headers: { "content-type": "application/json" },
           body: JSON.stringify({
             deviceId: data.deviceId,
             method: data.method,

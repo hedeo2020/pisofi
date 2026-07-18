@@ -101,6 +101,11 @@ export function createApiServer({ platform = createInMemoryPlatform() } = {}) {
         return send(response, 201, { data: payment }, { location: `/api/v1/sim/payment-intents/${payment.id}` });
       }
 
+      if (request.method === "POST" && url.pathname === "/api/v1/public/payment-intents") {
+        const payment = await platform.createPublicPaymentIntent(await readJson(request));
+        return send(response, 201, { data: payment }, { location: `/api/v1/public/payment-intents/${payment.id}` });
+      }
+
       if (request.method === "POST" && url.pathname === "/api/v1/payment-webhooks/mock") {
         const signature = request.headers["x-webhook-signature"];
         const body = await readBody(request);
