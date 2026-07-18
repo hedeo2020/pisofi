@@ -5,6 +5,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV CUSTOMER_API_BASE_URL=https://api.3dbpoint.com
 
+RUN apk add --no-cache curl
+
 COPY package.json ./
 COPY apps/portal ./apps/portal
 
