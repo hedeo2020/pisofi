@@ -25,4 +25,7 @@ OpenWrt/procd install:
 7. Run: /etc/init.d/pisonet-agent start
 8. Inspect: logread -e pisonet-agent
 
-The current build sends signed outbound heartbeats only. GPIO and nftables changes are intentionally disabled until board wiring and interface names are inspected over SSH.
+The current build sends signed outbound heartbeats and optional signed coin-pulse events.
+Captive portal and nftables traffic-control changes are intentionally disabled until board wiring and interface names are inspected over SSH.
+To enable a coin acceptor later, export or provide a GPIO value file and set coin_pulse_value_path in /etc/pisonet-agent/config.json.
+Most pulse coin acceptors idle high and pulse low, so coin_pulse_idle_high defaults to true.

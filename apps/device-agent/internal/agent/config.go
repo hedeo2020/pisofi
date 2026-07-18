@@ -15,6 +15,10 @@ type Config struct {
 	HeartbeatSeconds  int    `json:"heartbeat_seconds"`
 	SpoolDir          string `json:"spool_dir"`
 	AllowInsecureHTTP bool   `json:"allow_insecure_http"`
+	CoinPulseValuePath   string `json:"coin_pulse_value_path,omitempty"`
+	CoinPulseIdleHigh    bool   `json:"coin_pulse_idle_high,omitempty"`
+	CoinPulsePollMillis  int    `json:"coin_pulse_poll_millis,omitempty"`
+	CoinPulseBatchMillis int    `json:"coin_pulse_batch_millis,omitempty"`
 }
 
 func (c Config) Validate() error {
@@ -36,6 +40,20 @@ func (c Config) Validate() error {
 	}
 	if c.SpoolDir == "" {
 		return errors.New("spool_dir is required")
+	}
+	if c.CoinPulseValuePath != "" {
+		if c.CoinPulsePollMillis == 0 {
+			c.CoinPulsePollMillis = 25
+		}
+		if c.CoinPulseBatchMillis == 0 {
+			c.CoinPulseBatchMillis = 500
+		}
+		if c.CoinPulsePollMillis < 5 || c.CoinPulsePollMillis > 1000 {
+			return errors.New("coin_pulse_poll_millis must be between 5 and 1000")
+		}
+		if c.CoinPulseBatchMillis < 100 || c.CoinPulseBatchMillis > 10000 {
+			return errors.New("coin_pulse_batch_millis must be between 100 and 10000")
+		}
 	}
 	return nil
 }

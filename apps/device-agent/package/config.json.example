@@ -4,5 +4,9 @@
   "device_secret": "REPLACE-WITH-AT-LEAST-32-RANDOM-CHARACTERS",
   "heartbeat_seconds": 30,
   "spool_dir": "/var/lib/pisonet-agent/spool",
-  "allow_insecure_http": false
+  "allow_insecure_http": false,
+  "coin_pulse_value_path": "",
+  "coin_pulse_idle_high": true,
+  "coin_pulse_poll_millis": 25,
+  "coin_pulse_batch_millis": 500
 }
