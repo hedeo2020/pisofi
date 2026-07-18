@@ -33,6 +33,8 @@ Do not publish PostgreSQL or MQTT publicly. Keep `APP_MODE=simulation` and use d
 
 The Orange Pi agent sends signed heartbeats and optional signed `coin_pulse` events to `/api/v1/device-events`. Coin GPIO polling stays disabled until `coin_pulse_value_path` is set on the device.
 
+If you want separate Coolify resources for easier routing and isolation, use [docs/coolify-isolated-resources.md](docs/coolify-isolated-resources.md).
+
 ## Production gates
 
 - PostgreSQL-backed atomic ledger, payment webhook processing, and voucher redemption

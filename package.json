@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test",
     "simulate": "node apps/simulator/src/main.js",
-    "start:api": "node apps/api/src/main.js"
+    "start:api": "node apps/api/src/main.js",
+    "start:portal": "node apps/portal/src/main.js"
   },
   "engines": {
     "node": ">=22"
