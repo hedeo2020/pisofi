@@ -41,6 +41,29 @@ func (c *Client) SendHeartbeat(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	return c.sendDeviceEvent(ctx, body, "heartbeat")
+}
+
+func (c *Client) SendCoinPulse(ctx context.Context, eventID string, pulses int) error {
+	if eventID == "" {
+		return fmt.Errorf("event ID is required")
+	}
+	if pulses <= 0 {
+		return fmt.Errorf("pulses must be positive")
+	}
+	body, err := json.Marshal(map[string]any{
+		"event":       "coin_pulse",
+		"eventId":     eventID,
+		"pulses":      pulses,
+		"occurred_at": c.now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		return err
+	}
+	return c.sendDeviceEvent(ctx, body, "coin pulse")
+}
+
+func (c *Client) sendDeviceEvent(ctx context.Context, body []byte, description string) error {
 	requestNonce, err := nonce()
 	if err != nil {
 		return fmt.Errorf("create nonce: %w", err)
@@ -58,11 +81,11 @@ func (c *Client) SendHeartbeat(ctx context.Context) error {
 	req.Header.Set("X-Device-Signature", SignRequest(SignedRequest{Method: http.MethodPost, Path: path, Body: body, Timestamp: timestamp, Nonce: requestNonce}, c.config.DeviceSecret))
 	response, err := c.http.Do(req)
 	if err != nil {
-		return fmt.Errorf("send heartbeat: %w", err)
+		return fmt.Errorf("send %s: %w", description, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("heartbeat rejected with HTTP %d", response.StatusCode)
+		return fmt.Errorf("%s rejected with HTTP %d", description, response.StatusCode)
 	}
 	return nil
 }

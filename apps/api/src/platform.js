@@ -71,13 +71,26 @@ export function createInMemoryPlatform({ now = () => new Date(), paymentGateway 
     },
 
     recordDeviceEvent({ deviceId, event }) {
-      requireDevice(deviceId);
+      const device = requireDevice(deviceId);
       if (!event || typeof event.event !== "string" || event.event.length < 1) throw new Error("event is required");
+      let coinCredit;
+      if (event.event === "coin_pulse") {
+        positiveInteger(event.pulses, "pulses");
+        if (typeof event.eventId !== "string" || event.eventId.length < 1) throw new Error("eventId is required");
+        const idempotencyKey = `${deviceId}:${event.eventId}`;
+        if (eventIds.has(idempotencyKey)) {
+          coinCredit = { duplicate: true, balance: balances.get(deviceId) };
+        } else {
+          eventIds.add(idempotencyKey);
+          balances.set(deviceId, balances.get(deviceId) + event.pulses * device.pulseValue);
+          coinCredit = { duplicate: false, balance: balances.get(deviceId) };
+        }
+      }
       const stored = deviceEvents.get(deviceId) ?? [];
       const recorded = { ...event, receivedAt: now() };
       stored.push(recorded);
       deviceEvents.set(deviceId, stored);
-      return { accepted: true, deviceId, event: event.event, receivedAt: recorded.receivedAt };
+      return { accepted: true, deviceId, event: event.event, receivedAt: recorded.receivedAt, ...(coinCredit ? { coinCredit } : {}) };
     },
 
     recordCoinPulse({ deviceId, eventId, pulses }) {
@@ -85,10 +98,10 @@ export function createInMemoryPlatform({ now = () => new Date(), paymentGateway 
       positiveInteger(pulses, "pulses");
       if (typeof eventId !== "string" || eventId.length < 1) throw new Error("eventId is required");
       const idempotencyKey = `${deviceId}:${eventId}`;
-      if (eventIds.has(idempotencyKey)) return { duplicate: true };
+      if (eventIds.has(idempotencyKey)) return { duplicate: true, balance: balances.get(deviceId) };
       eventIds.add(idempotencyKey);
       balances.set(deviceId, balances.get(deviceId) + pulses * device.pulseValue);
-      return { duplicate: false };
+      return { duplicate: false, balance: balances.get(deviceId) };
     },
 
     issueVoucher({ deviceId, price, durationSeconds }) {
