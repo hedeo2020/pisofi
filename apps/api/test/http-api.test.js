@@ -137,6 +137,43 @@ test("device event endpoint rejects forged heartbeat", async () => {
   });
 });
 
+test("signed coin pulse device event adds usable device credit", async () => {
+  await withServer(async (baseUrl) => {
+    const secret = "orange-pi-device-secret-at-least-32-characters";
+    const enrolled = await json(baseUrl, "/api/v1/sim/devices", {
+      method: "POST",
+      body: JSON.stringify({ name: "orange-pi-one-001", pulseValue: 5, deviceSecret: secret }),
+    });
+    assert.equal(enrolled.response.status, 201);
+    const deviceId = enrolled.body.data.id;
+
+    const path = "/api/v1/device-events";
+    const body = JSON.stringify({ event: "coin_pulse", eventId: "coin-event-1", pulses: 2 });
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = "nonce-for-coin-pulse-test";
+    const signature = signDeviceRequest({ method: "POST", path, body, timestamp, nonce, secret });
+    const pulseResponse = await fetch(baseUrl + path, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-device-id": deviceId,
+        "x-device-timestamp": String(timestamp),
+        "x-device-nonce": nonce,
+        "x-device-signature": signature,
+      },
+      body,
+    });
+    assert.equal(pulseResponse.status, 202);
+    assert.deepEqual((await pulseResponse.json()).data.coinCredit, { duplicate: false, balance: 10 });
+
+    const voucher = await json(baseUrl, "/api/v1/sim/vouchers", {
+      method: "POST",
+      body: JSON.stringify({ deviceId, price: 10, durationSeconds: 300 }),
+    });
+    assert.equal(voucher.response.status, 201);
+  });
+});
+
 test("API returns a stable validation error envelope", async () => {
   await withServer(async (baseUrl) => {
     const result = await json(baseUrl, "/api/v1/sim/devices", {
