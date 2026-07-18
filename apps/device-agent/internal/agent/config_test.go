@@ -58,3 +58,31 @@ func TestConfigRejectsMissingAndOutOfRangeFields(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigAcceptsOptionalCoinPulseGPIO(t *testing.T) {
+	config := Config{
+		ServerURL:             "https://control.example.com",
+		DeviceID:              "station-1",
+		DeviceSecret:          "a-device-secret-with-at-least-32-bytes",
+		HeartbeatSeconds:      30,
+		SpoolDir:              "/tmp/pisonet-agent",
+		CoinPulseValuePath:    "/sys/class/gpio/gpio12/value",
+		CoinPulseIdleHigh:     true,
+		CoinPulsePollMillis:   25,
+		CoinPulseBatchMillis:  500,
+	}
+	if err := config.Validate(); err != nil {
+		t.Fatalf("valid coin pulse config rejected: %v", err)
+	}
+
+	config.CoinPulsePollMillis = 1
+	if err := config.Validate(); err == nil {
+		t.Fatal("too-fast coin pulse polling accepted")
+	}
+
+	config.CoinPulsePollMillis = 25
+	config.CoinPulseBatchMillis = 50
+	if err := config.Validate(); err == nil {
+		t.Fatal("too-short coin pulse batch window accepted")
+	}
+}
